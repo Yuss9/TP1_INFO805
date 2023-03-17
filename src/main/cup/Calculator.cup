@@ -1,0 +1,76 @@
+
+package fr.usmb.m1isc.compilation.calculator;
+import java_cup.runtime.Symbol;
+
+
+/* nom de la classe a generer */
+
+class CalculatorParser;
+
+
+/* inclusion de code */
+
+action code {:
+    /* pile d'évaluation */
+    java.util.Stack<Integer> stack = new java.util.Stack<Integer>();
+:}
+
+parser code {:
+
+/* pour le parser (redefinition de la methode reportant les erreurs d'analyse) */
+
+    public void report_error(String message, Object info) {
+        String m = "";
+        if (info instanceof java_cup.runtime.Symbol) {
+            Symbol s = ((Symbol) info);
+            if (s.left >= 0) {
+/* Ajoute le numero de ligne  */
+
+                m = m + "Ligne " + (s.left+1) + " ";
+            }
+            if (s.right >= 0) {
+
+/* Ajoute le numero de colonne  */
+
+                m = m + "Colonne " + (s.right+1) + " ";
+            }
+            if (s.left >=0  || s.right >= 0) {
+                m = m + ": ";
+            }
+        }
+        m = m + "Erreur de syntaxe";
+        System.out.println(m);
+    }
+:}
+
+init with {:
+/*    initialisation du parser */
+
+:};
+
+
+/* declarations (terminaux, non-terminaux, etc.) */
+
+
+/* symboles terminaux */
+
+terminal PLUS, MINUS, TIMES, DIVIDE, MODULO, LPAREN, RPAREN, SEMICOLON, ERROR;
+terminal Integer  NUMBER;
+/* non terminaux */
+
+non terminal expr, term, factor;
+
+
+/* grammaire */
+
+expr ::= expr PLUS term {: stack.push(stack.pop() + stack.pop()); :}
+       | expr MINUS term {: int rhs = stack.pop(); stack.push(stack.pop() - rhs); :}
+       | term ;
+term ::= term TIMES factor {: stack.push(stack.pop() * stack.pop()); :}
+       | term DIVIDE factor {: int rhs = stack.pop(); if (rhs == 0) {stack.push(0); System.out.println("Division par zéro");} else {stack.push(stack.pop() / rhs);}; :}
+       | term MODULO factor {: int rhs = stack.pop(); if (rhs == 0) {stack.push(0); System.out.println("Modulo zéro");} else {stack.push(stack.pop() % rhs);}; :}
+       | factor ;
+factor ::= NUMBER:v {: stack.push(v); :}
+         | MINUS factor {: stack.push(-stack.pop()); :}
+         | LPAREN expr RPAREN ;
+
